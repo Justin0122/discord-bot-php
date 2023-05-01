@@ -11,7 +11,7 @@ class MessageListener
     public function handle(Message $message, Discord $discord, $channel): void
     {
         if ($message->author->id != $discord->id) {
-            $channel->sendMessage("{$message->author->username} said: {$message->content}");
+//            $channel->sendMessage("{$message->author->username} said: {$message->content}");
         }
     }
 }

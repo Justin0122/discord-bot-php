@@ -22,7 +22,8 @@ class Ping
         return [
             'title' => 'Ping',
             'content' => "Pong!",
-            'flags' => 64
+            'flags' => 64,
+            'color' => hexdec('34ebd8')
         ];
     }
 
