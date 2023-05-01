@@ -39,16 +39,24 @@ $discord->on('ready', function (Discord $discord) {
     $discord->on(Event::INTERACTION_CREATE, function ($interaction, Discord $discord) use ($channel) {
         $command = $interaction->data->name;
         $commandHandler = new CommandHandler();
-        $commandHandler->runCommand($command, $channel);
-        //acknowledge interaction
+        $commandHandler->runCommand($command, $channel, $discord);
+
         $commandHandler = new CommandHandler();
-        $response = $commandHandler->runCommand($command, $channel);
+        $response = $commandHandler->runCommand($command, $channel, $discord);
         $discord->getHttpClient()->post("/interactions/{$interaction->id}/{$interaction->token}/callback", [
             'type' => 4,
             'data' => [
-                'content' => $response
+                'embeds' => [
+                    [
+                        'title' => $response['title'] ?? '',
+                        'description' => $response['content'],
+                        'color' => hexdec('00FF00')
+                    ]
+                ],
+                'flags' => $response['flags'] ?? 0
             ]
         ]);
+
 
 
     });

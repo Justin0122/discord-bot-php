@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Bot\Commands;
 
 class Ping
@@ -18,10 +17,13 @@ class Ping
         return [];
     }
 
-    public function handle($channel): string
-    {
-        return 'Pong!';
-    }
+    public function handle(){
 
+        return [
+            'title' => 'Ping',
+            'content' => "Pong!",
+            'flags' => 64
+        ];
+    }
 
 }
