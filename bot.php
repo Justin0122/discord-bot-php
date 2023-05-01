@@ -38,11 +38,13 @@ $discord->on('ready', function (Discord $discord) {
 
     $discord->on(Event::INTERACTION_CREATE, function ($interaction, Discord $discord) use ($channel) {
         $command = $interaction->data->name;
+        $options = $interaction->data->options ?? [];
+        $args = [];
+        foreach ($options as $option) {
+            $args[$option->name] = $option->value;
+        }
         $commandHandler = new CommandHandler();
-        $commandHandler->runCommand($command, $channel, $discord);
-
-        $commandHandler = new CommandHandler();
-        $response = $commandHandler->runCommand($command, $channel, $discord);
+        $response = $commandHandler->runCommand($command, $args, $discord);
         $discord->getHttpClient()->post("/interactions/{$interaction->id}/{$interaction->token}/callback", [
             'type' => 4,
             'data' => [
@@ -50,17 +52,13 @@ $discord->on('ready', function (Discord $discord) {
                     [
                         'title' => $response['title'] ?? '',
                         'description' => $response['content'],
-                        'color' => hexdec('00FF00')
+                        'color' => $response['color'] ?? hexdec('00FF00')
                     ]
                 ],
                 'flags' => $response['flags'] ?? 0
             ]
         ]);
-
-
-
     });
-
 
     ob_start(function ($buffer) use ($channel) {
         $channel->sendMessage($buffer);
