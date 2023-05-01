@@ -4,6 +4,7 @@ include __DIR__.'/vendor/autoload.php';
 include __DIR__ . '/Includes.php';
 
 use Bot\Helpers\CommandHandler;
+use Bot\Helpers\ImageHelper;
 use Discord\Discord;
 use Discord\Parts\Channel\Message;
 use Discord\WebSockets\Intents;
@@ -45,20 +46,43 @@ $discord->on('ready', function (Discord $discord) {
         }
         $commandHandler = new CommandHandler();
         $response = $commandHandler->runCommand($command, $args, $discord);
-        $discord->getHttpClient()->post("/interactions/{$interaction->id}/{$interaction->token}/callback", [
-            'type' => 4,
-            'data' => [
-                'embeds' => [
-                    [
-                        'title' => $response['title'] ?? '',
-                        'description' => $response['content'],
-                        'color' => $response['color'] ?? hexdec('00FF00')
-                    ]
-                ],
-                'flags' => $response['flags'] ?? 0
-            ]
-        ]);
+
+        if (isset($response['file'])) {
+            if (!isset($args['censor']) || !$args['censor']) {
+                ImageHelper::deleteFiles();
+            }
+            $discord->getHttpClient()->post("/interactions/{$interaction->id}/{$interaction->token}/callback", [
+                'type' => 4,
+                'data' => [
+                    'embeds' => [
+                        [
+                            'title' => $response['title'] ?? '',
+                            'color' => $response['color'] ?? hexdec('00FF00')
+                        ]
+                    ],
+                    'flags' => $response['flags'] ?? 0,
+                    'file' => $response['file']
+                ]
+            ]);
+            $channel->sendFile($response['file']);
+        } else {
+            $discord->getHttpClient()->post("/interactions/{$interaction->id}/{$interaction->token}/callback", [
+                'type' => 4,
+                'data' => [
+                    'embeds' => [
+                        [
+                            'title' => $response['title'] ?? '',
+                            'description' => $response['content'],
+                            'color' => $response['color'] ?? hexdec('00FF00')
+                        ]
+                    ],
+                    'flags' => $response['flags'] ?? 0
+                ]
+            ]);
+
+        }
     });
+
 
     ob_start(function ($buffer) use ($channel) {
         $channel->sendMessage($buffer);

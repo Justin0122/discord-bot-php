@@ -2,6 +2,7 @@
     "require": {
         "team-reflex/discord-php": "^7.3",
         "vlucas/phpdotenv": "^5.5",
-        "discord-php/slash": "^1.0"
+        "discord-php/slash": "^1.0",
+      "ext-fileinfo": "*"
     }
 }
