@@ -21,7 +21,7 @@ class Spotify
         return [];
     }
 
-    public function handle()
+    public function handle($args, $discord, $username)
     {
         // create a new session instance
         $session = new Session(
@@ -87,7 +87,7 @@ class Spotify
 
         $url = "https://accounts.spotify.com/authorize?client_id={$_ENV['SPOTIFY_CLIENT_ID']}&response_type=code&redirect_uri={$_ENV['SPOTIFY_REDIRECT_URI']}&scope=user-read-email%20user-read-private%20user-library-read%20user-top-read%20user-read-recently-played%20user-read-playback-state%20user-read-currently-playing%20user-follow-read%20user-read-playback-position%20user-read-recently-played%20user-read-playback-state%20user-modify-playback-state%20user-read-currently-playing%20user-read-playback-position%20user-read-recently-played%20user-read-playback-state%20user-modify-playback-state%20user-read-currently-playing%20user-read-playback-position%20user-read-recently-played%20user-read-playback-state%20user-modify-playback-state%20user-read-currently-playing%20user-read-playback-position%20user-read-recently-played%20user-read-playback-state%20user-modify-playback-state%20user-read-currently-playing%20user-read-playback-position%20user-read-recently-played%20user-read-playback-state%20user-modify-playback-state";
         return [
-            'title' => 'Spotify',
+            'title' => 'Spotify Login for '.$username,
             'content' => "Click [here]($url) to login to spotify",
             'flags' => 64,
             'color' => hexdec('34ebd8')

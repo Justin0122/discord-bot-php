@@ -45,7 +45,9 @@ $discord->on('ready', function (Discord $discord) {
             $args[$option->name] = $option->value;
         }
         $commandHandler = new CommandHandler();
-        $response = $commandHandler->runCommand($command, $args, $discord);
+        //get the username of the user who sent the command
+        $username = $interaction->member->user->username;
+        $response = $commandHandler->runCommand($command, $args, $discord, $username);
 
         $embed = [
             'title' => $response['title'] ?? '',
