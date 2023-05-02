@@ -47,39 +47,25 @@ $discord->on('ready', function (Discord $discord) {
         $commandHandler = new CommandHandler();
         $response = $commandHandler->runCommand($command, $args, $discord);
 
-        if (isset($response['file'])) {
-            if (!isset($args['censor']) || !$args['censor']) {
-                ImageHelper::deleteFiles();
-            }
-            $discord->getHttpClient()->post("/interactions/{$interaction->id}/{$interaction->token}/callback", [
-                'type' => 4,
-                'data' => [
-                    'embeds' => [
-                        [
-                            'title' => $response['title'] ?? '',
-                            'color' => $response['color'] ?? hexdec('00FF00')
-                        ]
-                    ],
-                    'flags' => $response['flags'] ?? 0,
-                    'file' => $response['file']
-                ]
-            ]);
-            $channel->sendFile($response['file']);
-        } else {
-            $discord->getHttpClient()->post("/interactions/{$interaction->id}/{$interaction->token}/callback", [
-                'type' => 4,
-                'data' => [
-                    'embeds' => [
-                        [
-                            'title' => $response['title'] ?? '',
-                            'description' => $response['content'],
-                            'color' => $response['color'] ?? hexdec('00FF00')
-                        ]
-                    ],
-                    'flags' => $response['flags'] ?? 0
-                ]
-            ]);
+        $embed = [
+            'title' => $response['title'] ?? '',
+            'color' => $response['color'] ?? hexdec('00FF00'),
+            'description' => $response['content'] ?? ''
+        ];
 
+        $data = [
+            'embeds' => [$embed],
+            'flags' => $response['flags'] ?? 0,
+            'file' => $response['file'] ?? ''
+        ];
+
+        $discord->getHttpClient()->post("/interactions/{$interaction->id}/{$interaction->token}/callback", [
+            'type' => 4,
+            'data' => $data
+        ]);
+
+        if (isset($response['file'])) {
+            $channel->sendFile($response['file']);
         }
     });
 
