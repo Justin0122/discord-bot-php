@@ -3,4 +3,4 @@ vendor
 .idea
 src/Media/Interact/*
 tmp/*
-access_token.txt
+access_token.json
