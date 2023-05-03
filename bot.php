@@ -5,6 +5,7 @@ include __DIR__ . '/Includes.php';
 
 use Bot\Helpers\CommandHandler;
 use Bot\Helpers\ImageHelper;
+use Bot\Helpers\RemoveAllCommands;
 use Discord\Discord;
 use Discord\Parts\Channel\Message;
 use Discord\WebSockets\Intents;
@@ -28,16 +29,16 @@ $discord = new Discord([
 $discord->on('ready', function (Discord $discord) {
     echo "Bot is ready!", PHP_EOL;
 
-    $channel = $discord->getChannel($_ENV['CHANNEL_ID']);
+//    RemoveAllCommands::removeAllCommands($discord);
 
     CommandRegistrar::register();
 
     $listener = new MessageListener();
-    $discord->on(Event::MESSAGE_CREATE, function (Message $message, Discord $discord) use ($channel, $listener) {
-        $listener->handle($message, $discord, $channel);
+    $discord->on(Event::MESSAGE_CREATE, function (Message $message, Discord $discord) use ($listener) {
+        $listener->handle($message, $discord);
     });
 
-    $discord->on(Event::INTERACTION_CREATE, function ($interaction, Discord $discord) use ($channel) {
+    $discord->on(Event::INTERACTION_CREATE, function ($interaction, Discord $discord) {
         $command = $interaction->data->name;
         $options = $interaction->data->options ?? [];
         $args = [];
@@ -45,9 +46,9 @@ $discord->on('ready', function (Discord $discord) {
             $args[$option->name] = $option->value;
         }
         $commandHandler = new CommandHandler();
-        //get the username of the user who sent the command
         $username = $interaction->member->user->username;
-        $response = $commandHandler->runCommand($command, $args, $discord, $username);
+        $user_id = $interaction->member->user->id;
+        $response = $commandHandler->runCommand($command, $args, $discord, $username, $user_id);
 
         $embed = [
             'title' => $response['title'] ?? '',
@@ -67,15 +68,10 @@ $discord->on('ready', function (Discord $discord) {
         ]);
 
         if (isset($response['file'])) {
-            $channel->sendFile($response['file']);
+            $interaction->channel->sendFile($response['file']);
         }
     });
 
-
-    ob_start(function ($buffer) use ($channel) {
-        $channel->sendMessage($buffer);
-        return $buffer;
-    });
 });
 
 
