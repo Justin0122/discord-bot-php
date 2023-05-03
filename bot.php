@@ -53,7 +53,8 @@ $discord->on('ready', function (Discord $discord) {
         $embed = [
             'title' => $response['title'] ?? '',
             'color' => $response['color'] ?? hexdec('00FF00'),
-            'description' => $response['content'] ?? ''
+            'description' => $response['content'] ?? '',
+            'fields' => $response['fields'] ?? [],
         ];
 
         $data = [

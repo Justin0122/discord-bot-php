@@ -19,7 +19,6 @@ class TogglePlaylistGen
 
     public function handle($args, $discord, $username, $user_id)
     {
-        //get the current state of the playlist generator from the users.json file where the user_id is the key
         $users = json_decode(file_get_contents(__DIR__.'/../../../users.json'), true);
 
         if (!isset($users[$user_id])) {
@@ -38,7 +37,6 @@ class TogglePlaylistGen
         $users[$user_id]['playlist_gen'] = $state;
         file_put_contents(__DIR__.'/../../../users.json', json_encode($users, JSON_PRETTY_PRINT));
 
-
         return [
             'title' => 'Toggled Playlist Generator',
             'content' => "Current State: ".($state ? 'On' : 'Off'),
@@ -46,5 +44,4 @@ class TogglePlaylistGen
             'color' => hexdec('34ebd8')
         ];
     }
-
 }

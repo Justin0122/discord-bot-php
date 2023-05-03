@@ -13,7 +13,6 @@ class CommandRegistrar
     {
         $client = new RegisterClient($_ENV['DISCORD_BOT_TOKEN']);
 
-        // Create a recursive iterator to loop through all PHP files in the commands directory and its subdirectories
         $dirIterator = new RecursiveDirectoryIterator(__DIR__.'/../Commands');
         $iterator = new RecursiveIteratorIterator($dirIterator, RecursiveIteratorIterator::LEAVES_ONLY);
         $phpFiles = new RegexIterator($iterator, '/^.+\.php$/i', RegexIterator::GET_MATCH);
@@ -22,13 +21,10 @@ class CommandRegistrar
             $filename = $phpFile[0];
             require_once $filename;
 
-            // Get the fully qualified class name of the command
             $className = 'Bot\\Commands\\' . str_replace('/', '\\', substr($filename, strlen(__DIR__.'/../Commands/'), -4));
 
-            // Check if the class exists before creating an instance
             if (class_exists($className)) {
                 $command = new $className();
-
                 $client->createGlobalCommand(
                     $command->getName(),
                     $command->getDescription(),
