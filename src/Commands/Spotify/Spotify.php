@@ -1,9 +1,9 @@
 <?php
 
-namespace Bot\Commands;
+namespace Bot\Commands\Spotify;
 
-use SpotifyWebAPI\SpotifyWebAPI;
 use SpotifyWebAPI\Session;
+use SpotifyWebAPI\SpotifyWebAPI;
 
 
 class Spotify
@@ -21,7 +21,7 @@ class Spotify
         return [];
     }
 
-    public function handle($args, $discord, $username)
+    public function handle($args, $discord, $username): array
     {
         // create a new session instance
         $session = new Session(

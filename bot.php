@@ -71,7 +71,6 @@ $discord->on('ready', function (Discord $discord) {
             $interaction->channel->sendFile($response['file']);
         }
     });
-
 });
 
 
