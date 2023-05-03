@@ -14,14 +14,14 @@ class Spotify
     }
     public function getDescription(): string
     {
-        return 'Use spotify API to get the last 10 liked songs';
+        return 'Allow the bot to access your spotify account';
     }
     public function getOptions(): array
     {
         return [];
     }
 
-    public function handle($args, $discord, $username): array
+    public function handle($args, $discord, $username, $user_id)
     {
         // create a new session instance
         $session = new Session(
@@ -78,12 +78,21 @@ class Spotify
             ],
         ];
 
-        //use the redirect uri to get the code from spotify
         $session->requestCredentialsToken($options['scope']);
         $accessToken = $session->getAccessToken();
         $refreshToken = $session->getRefreshToken();
         $api = new SpotifyWebAPI();
         $api->setAccessToken($accessToken);
+
+
+        $users = json_decode(file_get_contents('users.json'), true);
+        $users[$user_id] = [
+            'access_token' => $accessToken,
+            'playlist_gen' => false,
+        ];
+        file_put_contents('users.json', json_encode($users));
+
+
 
         $url = "https://accounts.spotify.com/authorize?client_id={$_ENV['SPOTIFY_CLIENT_ID']}&response_type=code&redirect_uri={$_ENV['SPOTIFY_REDIRECT_URI']}&scope=user-read-email%20user-read-private%20user-library-read%20user-top-read%20user-read-recently-played%20user-read-playback-state%20user-read-currently-playing%20user-follow-read%20user-read-playback-position%20user-read-recently-played%20user-read-playback-state%20user-modify-playback-state%20user-read-currently-playing%20user-read-playback-position%20user-read-recently-played%20user-read-playback-state%20user-modify-playback-state%20user-read-currently-playing%20user-read-playback-position%20user-read-recently-played%20user-read-playback-state%20user-modify-playback-state%20user-read-currently-playing%20user-read-playback-position%20user-read-recently-played%20user-read-playback-state%20user-modify-playback-state%20user-read-currently-playing%20user-read-playback-position%20user-read-recently-played%20user-read-playback-state%20user-modify-playback-state";
         return [
