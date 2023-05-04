@@ -23,7 +23,7 @@ class GetLatestSong
         return [];
     }
 
-    public function handle($args, $discord, $username, $user_id)
+    public function handle($args, $discord, $username, $user_id): array
     {
         $users = json_decode(file_get_contents(__DIR__ . '/../../../users.json'), true);
 
@@ -60,7 +60,6 @@ class GetLatestSong
                 'inline' => false,
             ];
         }
-
         return $embed;
     }
 }
