@@ -2,6 +2,8 @@
 
 namespace Bot\Commands;
 
+use Bot\Helpers\ErrorHandler;
+
 class Register
 {
     public function getName(): string
@@ -20,6 +22,10 @@ class Register
     public function handle($args, $discord, $username, $user_id): array
     {
         $users = json_decode(file_get_contents(__DIR__.'/../../users.json'), true);
+
+        if (isset($users[$user_id]['username'])) {
+            return ErrorHandler::handle('You are already registered');
+        }
 
         if (isset($users[$user_id])) {
             $users[$user_id]['username'] = $username;

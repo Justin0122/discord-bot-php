@@ -35,8 +35,6 @@ class CommandRegistrar
         }
     }
 
-
-
     public static function getCommand($command, $username, $user_id)
     {
         foreach (glob(__DIR__.'/../Commands/*.php') as $filename) {

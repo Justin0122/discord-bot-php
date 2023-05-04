@@ -2,6 +2,8 @@
 
 namespace Bot\Commands\Spotify;
 
+use Bot\Helpers\ErrorHandler;
+
 class TogglePlaylistGen
 {
     public function getName(): string
@@ -22,12 +24,7 @@ class TogglePlaylistGen
         $users = json_decode(file_get_contents(__DIR__.'/../../../users.json'), true);
 
         if (!isset($users[$user_id])) {
-            return [
-                'title' => 'Error',
-                'content' => 'You are not registered. Please register using /spotify',
-                'flags' => 64,
-                'color' => hexdec('eb3434')
-            ];
+            return ErrorHandler::handle('You are not registered. Please register using /spotify');
         }
 
         $state = $users[$user_id]['playlist_gen'];

@@ -55,6 +55,9 @@ $discord->on('ready', function (Discord $discord) {
             'color' => $response['color'] ?? hexdec('00FF00'),
             'description' => $response['content'] ?? '',
             'fields' => $response['fields'] ?? [],
+            'footer' => $response['footer'] ?? [],
+            'thumbnail' => $response['thumbnail'] ?? [],
+            'image' => $response['image'] ?? [],
         ];
 
         $data = [
@@ -72,6 +75,7 @@ $discord->on('ready', function (Discord $discord) {
             $interaction->channel->sendFile($response['file']);
         }
     });
+
 });
 
 

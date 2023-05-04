@@ -2,6 +2,8 @@
 
 namespace Bot\Commands\Admin;
 
+use Bot\Helpers\ErrorHandler;
+
 class SetAdmin
 {
     public function getName(): string
@@ -30,12 +32,7 @@ class SetAdmin
         $users = json_decode(file_get_contents(__DIR__.'/../../../users.json'), true);
 
         if (!isset($users[$user_id])) {
-            return [
-                'title' => 'Error',
-                'content' => 'User not found',
-                'flags' => 64,
-                'color' => hexdec('eb3434')
-            ];
+            return ErrorHandler::handle('You are not registered. Please register using /register');
         }
 
 
@@ -45,13 +42,9 @@ class SetAdmin
             $user = $args['user'];
         }
 
-        if ($users[$user_id]['admin']) {
-            return [
-                'title' => 'Error',
-                'content' => 'User is already an admin',
-                'flags' => 64,
-                'color' => hexdec('eb3434')
-            ];
+        //if the user is already an admin, return an error
+        if (isset($users[$args['user']]['admin'])) {
+            return ErrorHandler::handle("{$user} is already an admin");
         }
 
         $users[$user_id]['admin'] = true;
