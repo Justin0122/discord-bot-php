@@ -3,6 +3,7 @@
 namespace Bot\Commands\Spotify;
 
 use Bot\Helpers\ErrorHandler;
+use GuzzleHttp\Client;
 use SpotifyWebAPI\SpotifyWebAPI;
 use SpotifyWebAPI\Session;
 
@@ -25,20 +26,46 @@ class GetLatestSong
 
     public function handle($args, $discord, $username, $user_id): array
     {
-        $users = json_decode(file_get_contents(__DIR__ . '/../../../users.json'), true);
 
-        if (!isset($users[$user_id]['access_token'])) {
-            return ErrorHandler::handle('User is not authenticated with Spotify');
-        }
+        $api_url = $_ENV['API_URL'];
+        $secure_token = $_ENV['SECURE_TOKEN'];
+        $discord_id = $user_id;
 
-        $accessToken = $users[$user_id]['access_token'];
+        $link = "$api_url?$discord_id&secure_token=$secure_token";
+
+        $client = new Client();
+
+        $response = $client->request('GET', $link);
+        $response = json_decode($response->getBody(), true);
+
+        $users = $response['data'][0]['attributes'];
+        $discord_id = $users['discord_id'];
+        $accessToken = $users['spotify_access_token'];
+
         $api = new SpotifyWebAPI();
         $api->setAccessToken($accessToken);
 
         try {
             $me = $api->me();
-        } catch (\Exception $e) {
-            return ErrorHandler::handle('Failed to get user info from Spotify: ' . $e->getMessage());
+        } catch (\SpotifyWebAPI\SpotifyWebAPIException $e) {
+            if ($e->getMessage() == 'The access token expired') {
+                $session = new Session(
+                    $_ENV['SPOTIFY_CLIENT_ID'],
+                    $_ENV['SPOTIFY_CLIENT_SECRET'],
+                    $_ENV['SPOTIFY_REDIRECT_URI']
+                );
+                $session->refreshAccessToken($users['spotify_refresh_token']);
+                $accessToken = $session->getAccessToken();
+                $refreshToken = $session->getRefreshToken();
+                $link = "$api_url?$discord_id&secure_token=$secure_token&spotify_access_token=$accessToken&spotify_refresh_token=$refreshToken";
+                $client->request('GET', $link);
+
+                $api->setAccessToken($accessToken);
+                $me = $api->me();
+                echo 'Access token refreshed for ' . $me->display_name . PHP_EOL;
+            } else {
+                return ErrorHandler::handle($e, $discord);
+            }
         }
 
         $tracks = $api->getMySavedTracks([
@@ -46,8 +73,8 @@ class GetLatestSong
         ]);
 
         $embed = [
-            'title' => 'Latest songs added by '.$me->display_name,
-            'description' => 'Here are the latest songs added by '.$me->display_name,
+            'title' => 'Latest songs added by ' . $me->display_name,
+            'content' => '',
             'color' => hexdec('34ebd8'),
             'fields' => []
         ];

@@ -2,6 +2,7 @@
 
 namespace Bot\Events;
 
+use Bot\Helpers\TokenHandler;
 use Discord\Discord;
 use Discord\Http\Exceptions\NoPermissionsException;
 use Discord\Parts\Channel\Message;
@@ -16,9 +17,7 @@ class MessageListener
     {
         $channel = $discord->getChannel($message->channel_id);
         if ($message->author->id != $discord->id) {
-            if ($message->author->id == "1103661771316805663") {
-                $channel->sendMessage("Received Tokens: " . $message->content);
-            }
+
         }
     }
 }
