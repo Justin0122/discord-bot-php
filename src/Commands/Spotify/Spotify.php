@@ -21,7 +21,7 @@ class Spotify
         return [];
     }
 
-    public function handle($args, $discord, $username, $user_id)
+    public function handle($args, $discord, $username, $user_id): array
     {
         // create a new session instance
         $session = new Session(

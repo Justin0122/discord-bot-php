@@ -57,7 +57,7 @@ class GetLatestSong
                 $session->refreshAccessToken($users['spotify_refresh_token']);
                 $accessToken = $session->getAccessToken();
                 $refreshToken = $session->getRefreshToken();
-                $link = "$api_url?$discord_id&secure_token=$secure_token&spotify_access_token=$accessToken&spotify_refresh_token=$refreshToken";
+                $link = "$api_url?discord_id=$discord_id&secure_token=$secure_token&spotify_access_token=$accessToken&spotify_refresh_token=$refreshToken";
                 $client->request('GET', $link);
 
                 $api->setAccessToken($accessToken);
