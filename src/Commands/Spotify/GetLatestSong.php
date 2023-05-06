@@ -31,14 +31,18 @@ class GetLatestSong
         $secure_token = $_ENV['SECURE_TOKEN'];
         $discord_id = $user_id;
 
-        $link = "$api_url?$discord_id&secure_token=$secure_token";
+        $link = "$api_url$discord_id?secure_token=$secure_token&discord_id=$discord_id";
 
         $client = new Client();
 
+        try{
         $response = $client->request('GET', $link);
+        } catch (\GuzzleHttp\Exception\ClientException $e) {
+            return ErrorHandler::handle("Please register using the `spotify` command first.");
+        }
         $response = json_decode($response->getBody(), true);
 
-        $users = $response['data'][0]['attributes'];
+        $users = $response['data']['attributes'];
         $discord_id = $users['discord_id'];
         $accessToken = $users['spotify_access_token'];
 

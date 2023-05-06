@@ -20,21 +20,9 @@ class GeneratePlaylist
         return [];
     }
 
-    public function handle(): array
+    public function handle($args, $discord, $username, $user_id): array
     {
-        $playlistScheduler = new PlaylistScheduler();
 
-        $playlistUsers = $playlistScheduler->getPlaylistUsers();
-
-        foreach ($playlistUsers as $user) {
-            $playlistScheduler->generatePlaylist($user);
-        }
-
-        return [
-            'title' => 'Generated Playlists',
-            'content' => 'Generated playlists for ' . count($playlistUsers) . ' users',
-            'flags' => 64,
-        ];
     }
 
 }
