@@ -4,7 +4,7 @@ namespace Bot\Helpers;
 
 class ErrorHandler
 {
-    public static function handle($message)
+    public static function handle($message): array
     {
         return [
             'title' => 'Error',
@@ -14,7 +14,7 @@ class ErrorHandler
         ];
     }
 
-    public static function handleException($e)
+    public static function handleException($e): array
     {
         return [
             'title' => 'Error',
