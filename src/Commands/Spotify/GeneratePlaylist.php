@@ -5,19 +5,18 @@ namespace Bot\Commands\Spotify;
 use Bot\Helpers\ErrorHandler;
 use Bot\Helpers\SessionHandler;
 use Bot\Helpers\TokenHandler;
+use bot\Scheduler\PlaylistScheduler;
 
-class GetLatestSong
+class GeneratePlaylist
 {
     public function getName(): string
     {
-        return 'getlatestsong';
+        return 'generateplaylist';
     }
-
     public function getDescription(): string
     {
-        return 'Get the latest song from your liked songs';
+        return 'Generate a playlist based on your liked songs';
     }
-
     public function getOptions(): array
     {
         return [];
@@ -35,28 +34,10 @@ class GetLatestSong
         //set the api using sessionHandler
         $api = (new SessionHandler())->setSession($user_id);
 
-        //get the latest 10 songs
-        $tracks = $api->getMySavedTracks([
-            'limit' => 10
-        ]);
-
         $me = $api->me();
-        $embed = [
-            'title' => 'Latest songs added by ' . $me->display_name,
-            'content' => '',
-            'color' => hexdec('34ebd8'),
-            'fields' => []
-        ];
 
-        foreach ($tracks->items as $item) {
-            $track = $item->track;
-            $embed['fields'][] = [
-                'name' => $track->name,
-                'value' => 'By: ' . $track->artists[0]->name . ' | Album: ' . $track->album->name . ' | Added: ' . $item->added_at,
-                'inline' => false,
-            ];
-        }
-        return $embed;
+        return [];
+
     }
 
 }

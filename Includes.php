@@ -1,8 +1,11 @@
 <?php
 
 include __DIR__.'/src/Events/MessageListener.php';
-include __DIR__.'/src/Helpers/CommandRegistrar.php';
-include __DIR__.'/src/Helpers/CommandHandler.php';
-include __DIR__.'/src/Helpers/ImageHelper.php';
-include __DIR__.'/src/Helpers/RemoveAllCommands.php';
-include __DIR__ . '/src/Helpers/ErrorHandler.php';
+
+foreach (glob(__DIR__.'/src/Helpers/*.php') as $filename) {
+    include $filename;
+}
+
+foreach (glob(__DIR__.'/src/Scheduler/*.php') as $filename) {
+    include $filename;
+}

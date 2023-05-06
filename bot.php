@@ -19,11 +19,14 @@ use Dotenv\Dotenv;
 $dotenv = Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
-$discord = new Discord([
-    'token' => $_ENV['DISCORD_BOT_TOKEN'],
-    'intents' => Intents::getDefaultIntents()
-]);
-
+try {
+    $discord = new Discord([
+        'token' => $_ENV['DISCORD_BOT_TOKEN'],
+        'intents' => Intents::getDefaultIntents()
+    ]);
+} catch (\Discord\Exceptions\IntentException $e) {
+    echo $e->getMessage();
+}
 
 
 $discord->on('ready', function (Discord $discord) {
