@@ -3,11 +3,11 @@
 namespace Bot\Helpers;
 
 class CommandHandler{
-    public static function runCommand($command, $args, $discord)
+    public static function runCommand($command, $args, $discord, $username, $user_id): array
     {
-        $commandObj = CommandRegistrar::getCommand($command);
+        $commandObj = CommandRegistrar::getCommand($command, $username, $user_id);
         if ($commandObj) {
-            return $commandObj->handle($args, $discord);
+            return $commandObj->handle($args, $discord, $username, $user_id);
         } else {
             return [
                 'title' => 'Command not found',

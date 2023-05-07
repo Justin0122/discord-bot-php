@@ -2,16 +2,22 @@
 
 namespace Bot\Events;
 
+use Bot\Helpers\TokenHandler;
 use Discord\Discord;
+use Discord\Http\Exceptions\NoPermissionsException;
 use Discord\Parts\Channel\Message;
 
 
 class MessageListener
 {
-    public function handle(Message $message, Discord $discord, $channel): void
+    /**
+     * @throws NoPermissionsException
+     */
+    public function handle(Message $message, Discord $discord): void
     {
+        $channel = $discord->getChannel($message->channel_id);
         if ($message->author->id != $discord->id) {
-//            $channel->sendMessage("{$message->author->username} said: {$message->content}");
+
         }
     }
 }

@@ -3,6 +3,9 @@
         "team-reflex/discord-php": "^7.3",
         "vlucas/phpdotenv": "^5.5",
         "discord-php/slash": "^1.0",
-      "ext-fileinfo": "*"
+      "ext-fileinfo": "*",
+        "cron/cron": "^1.8",
+        "jwilsson/spotify-web-api-php": "^5.6",
+      "ext-pcntl": "*"
     }
 }
