@@ -3,7 +3,7 @@
 namespace Bot\Helpers;
 
 class CommandHandler{
-    public static function runCommand($command, $args, $discord, $username, $user_id)
+    public static function runCommand($command, $args, $discord, $username, $user_id): array
     {
         $commandObj = CommandRegistrar::getCommand($command, $username, $user_id);
         if ($commandObj) {
