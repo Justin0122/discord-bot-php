@@ -32,7 +32,7 @@ class CommandRegistrar
                         $command->getDescription(),
                         $command->getOptions()
                     );
-                    echo "Registered guild command: {$command->getName()} in guild: {$command->getGuildId()}" . " ({$command->getGuildName()})", PHP_EOL;
+                    echo "Registered guild command: {$command->getName()} in guild: {$command->getGuildId()}", PHP_EOL;
                 } else {
                     $client->createGlobalCommand(
                         $command->getName(),
