@@ -2,7 +2,6 @@
 
 namespace Bot\Events;
 
-use Bot\Helpers\TokenHandler;
 use Discord\Discord;
 use Discord\Http\Exceptions\NoPermissionsException;
 use Discord\Parts\Channel\Message;

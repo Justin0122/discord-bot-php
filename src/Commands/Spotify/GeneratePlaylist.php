@@ -2,12 +2,15 @@
 
 namespace Bot\Commands\Spotify;
 
+use Bot\Builders\EmbedBuilder;
 use Bot\Helpers\ErrorHandler;
 use Bot\Helpers\SessionHandler;
 use Bot\Helpers\TokenHandler;
+use Discord\Builders\MessageBuilder;
 use Discord\Discord;
 use SpotifyWebAPI\SpotifyWebAPIException;
 use Discord\Parts\Channel\Message;
+use Discord\Parts\Interactions\Interaction;
 
 class GeneratePlaylist
 {
@@ -20,6 +23,11 @@ class GeneratePlaylist
     public function getDescription(): string
     {
         return 'Generate a playlist based on your liked songs. Max 250 songs.';
+    }
+
+    public function getEphemeral(): bool
+    {
+        return true;
     }
 
     public function getGuildId(): ?string
@@ -53,13 +61,17 @@ class GeneratePlaylist
     }
 
 
-    public function handle($args, Discord $discord, $username, $user_id): array
+    public function handle(Interaction $interaction, $discord): void
     {
+        $user_id = $interaction->member->user->id;
+
         $tokenHandler = new TokenHandler($_ENV['API_URL'], $_ENV['SECURE_TOKEN']);
         $tokens = $tokenHandler->getTokens($user_id);
 
         if (!$tokens) {
-            return ErrorHandler::handle("Please register using the `spotify` command first.");
+            $interaction->respondWithMessage(
+                MessageBuilder::new()->addEmbed(ErrorHandler::handle("You need to authorize the bot first by using the '/spotify' command."))
+            );
         }
 
         // Set the API using SessionHandler
@@ -72,53 +84,48 @@ class GeneratePlaylist
 
         if ($pid == -1) {
             // Fork failed, handle the error
-            return ErrorHandler::handle("Failed to create a background process for playlist generation.");
+            $interaction->respondWithMessage(
+                MessageBuilder::new()->addEmbed(ErrorHandler::handle("Failed to generate playlist."))
+            );
         } elseif ($pid > 0) {
             // Parent process
-            // Return an embed indicating that the playlist is being generated
-            $startDate = $args['start_date'] ? new \DateTime($args['start_date']) : (new \DateTime())->modify('-1 month');
-            $endDate = $args['end_date'] ? new \DateTime($args['end_date']) : ($args['start_date'] ? (new \DateTime($args['start_date']))->modify('+1 month') : new \DateTime());
-            $playlistTitle = 'Liked Songs from ' . $startDate->format('M Y') .'.';
+            //get startdate from interaction if set, else default to 1 month ago
+            $optionRepository = $interaction->data->options;
+            $startDate = $optionRepository['start_date'] ? new \DateTime($optionRepository['start_date']->value) : new \DateTime('-1 month');
+            $endDate = $optionRepository['end_date'] ? new \DateTime($optionRepository['end_date']->value) : (clone $startDate)->modify('+1 month');
+            //make the PlaylistTitle like: "Liked Songs from Mar 2021."
+            $playlistTitle = 'Liked Songs from ' . $startDate->format('M Y') . '.';
 
             $playlists = $api->getUserPlaylists($me->id);
             foreach ($playlists->items as $playlist) {
                 if ($playlist->name == $playlistTitle) {
-                    return ErrorHandler::handle("A playlist with the name `$playlistTitle` already exists. Please delete it and try again.");
+                    $interaction->respondWithMessage(
+                        MessageBuilder::new()->addEmbed(ErrorHandler::handle("Playlist already exists."))
+                    );
                 }
             }
 
             if ($startDate > $endDate) {
-                return ErrorHandler::handle("Start date cannot be after end date.");
+                $interaction->respondWithMessage(
+                    MessageBuilder::new()->addEmbed(ErrorHandler::handle("Start date cannot be after end date."))
+                );
             }
 
             if ($endDate > new \DateTime()) {
-                return ErrorHandler::handle("End date cannot be in the future.");
+                $interaction->respondWithMessage(
+                    MessageBuilder::new()->addEmbed(ErrorHandler::handle("End date cannot be in the future."))
+                );
             }
+            $embed = EmbedBuilder::create($discord)
+                ->setTitle('Generating playlist...')
+                ->setDescription('This may take a while.')
+                ->setInfo()
+                ->addField('Title', $playlistTitle)
+                ->build();
 
-
-            return [
-                'title' => 'Playlist Generation',
-                'content' => 'Your playlist is being generated. Click [here](https://open.spotify.com/user/' . $me->id . ') to view your Spotify profile.',
-                'color' => hexdec('FFFF00'),
-                'fields' => [
-                    [
-                        'name' => 'Playlist Name',
-                        'value' => $playlistTitle,
-                        'inline' => false
-                    ],
-                    [
-                        'name' => 'Playlist Description',
-                        'value' => 'This playlist was generated with your liked songs from ' .
-                            $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d') . '.',
-                        'inline' => false
-                    ],
-                    [
-                        'name' => 'Playlist Owner',
-                        'value' => $me->display_name,
-                        'inline' => true
-                    ]
-                ]
-            ];
+            $interaction->respondWithMessage(
+                MessageBuilder::new()->addEmbed($embed), true, true
+            );
         } else {
             // Child process
             try {
@@ -142,12 +149,10 @@ class GeneratePlaylist
                         break;
                     }
 
-                    // Filter tracks added within the last month
-                    $startDate = $args['start_date'] ? new \DateTime($args['start_date']) : (new \DateTime())->modify('-1 month');
-                    $endDate = isset($args['end_date'])
-                        ? new \DateTime($args['end_date'])
-                        : ($args['start_date'] ? (new \DateTime($args['start_date']))->modify('+1 month') : new \DateTime());
-                    $startYear = $startDate->format('Y');
+                    $optionRepository = $interaction->data->options;
+                    $startDate = $optionRepository['start_date'] ? new \DateTime($optionRepository['start_date']->value) : new \DateTime('-1 month');
+                    $endDate = $optionRepository['end_date'] ? new \DateTime($optionRepository['end_date']->value) : (clone $startDate)->modify('+1 month');
+
 
                     $filteredTracks = array_filter($tracks->items, function ($item) use ($startDate, $endDate) {
                         $addedAt = new \DateTime($item->added_at);
@@ -167,11 +172,12 @@ class GeneratePlaylist
                     exit(); // Terminate the child process
                 }
 
+                $public = $optionRepository['public'] ? $optionRepository['public']->value : false;
 
                 $playlistTitle = 'Liked Songs from ' . $startDate->format('M Y') .'.';
                 $playlist = $api->createPlaylist([
                     'name' => $playlistTitle,
-                    'public' => $args['public'] ?? false,
+                    'public' => $public,
                     'description' =>
                         'This playlist was generated with your liked songs from ' .
                         $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d') . '.'

@@ -4,6 +4,7 @@ namespace Bot\Helpers;
 
 use Discord\Discord;
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
 use SpotifyWebAPI\SpotifyWebAPI;
 
 class TokenHandler
@@ -35,7 +36,7 @@ class TokenHandler
         try {
             $response = $client->request('GET', $link);
         } catch (\GuzzleHttp\Exception\ClientException $e) {
-            return ErrorHandler::handle("Please register using the `spotify` command first.");
+            return false;
         }
         $response = json_decode($response->getBody(), true);
 
@@ -51,6 +52,7 @@ class TokenHandler
             $api->me();
         } catch (\SpotifyWebAPI\SpotifyWebAPIException $e) {
             $accessToken = $this->refreshAccessToken($discord_id, $refreshToken);
+        } catch (GuzzleException $e) {
         }
 
         return [
@@ -60,12 +62,19 @@ class TokenHandler
         ];
     }
 
+    /**
+     * @throws GuzzleException
+     */
     public function refreshAccessToken($discordId, $refreshToken)
     {
         $link = $this->apiUrl . '?discord_id=' . $discordId . '&secure_token=' . $this->secureToken . '&spotify_refresh_token=' . $refreshToken;
 
         $response = $this->client->request('GET', $link);
         $response = json_decode($response->getBody(), true);
+
+        if (empty($response['data']['attributes'])) {
+            return false;
+        }
 
         return $response['data']['attributes']['spotify_access_token'];
     }

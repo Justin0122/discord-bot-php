@@ -4,7 +4,6 @@ namespace Bot\Helpers;
 use Discord\Slash\RegisterClient;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
-use RecursiveRegexIterator;
 use RegexIterator;
 
 class CommandRegistrar
@@ -45,7 +44,7 @@ class CommandRegistrar
         }
     }
 
-    public static function getCommand($command, $username, $user_id)
+    public static function getCommandByName($command)
     {
         foreach (glob(__DIR__.'/../Commands/*.php') as $filename) {
             require_once $filename;

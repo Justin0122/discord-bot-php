@@ -2,9 +2,12 @@
 
 namespace Bot\Commands\Spotify;
 
+use Bot\Builders\EmbedBuilder;
 use Bot\Helpers\ErrorHandler;
 use Bot\Helpers\SessionHandler;
 use Bot\Helpers\TokenHandler;
+use Discord\Builders\MessageBuilder;
+use Discord\Parts\Interactions\Interaction;
 
 class GetLatestSong
 {
@@ -28,13 +31,17 @@ class GetLatestSong
         return [];
     }
 
-    public function handle($args, $discord, $username, $user_id): array
+    public function handle(Interaction $interaction, $discord): void
+
     {
         $tokenHandler = new TokenHandler($_ENV['API_URL'], $_ENV['SECURE_TOKEN']);
+        $user_id = $interaction->member->user->id;
         $tokens = $tokenHandler->getTokens($user_id);
 
         if (!$tokens) {
-            return ErrorHandler::handle("Please register using the `spotify` command first.");
+            $interaction->respondWithMessage(
+                MessageBuilder::new()->addEmbed(ErrorHandler::handle("You need to authorize the bot first by using the '/spotify' command."))
+            );
         }
 
         //set the api using sessionHandler
@@ -46,22 +53,17 @@ class GetLatestSong
         ]);
 
         $me = $api->me();
-        $embed = [
-            'title' => 'Latest songs added by ' . $me->display_name,
-            'content' => '',
-            'color' => hexdec('34ebd8'),
-            'fields' => []
-        ];
 
-        foreach ($tracks->items as $item) {
-            $track = $item->track;
-            $embed['fields'][] = [
-                'name' => $track->name,
-                'value' => 'By: ' . $track->artists[0]->name . ' | Album: ' . $track->album->name . ' | Added: ' . $item->added_at,
-                'inline' => false,
-            ];
+        $embed = EmbedBuilder::create($discord)
+            ->setTitle('Liked songs')
+            ->setSuccess()
+            ->setDescription('Here are your latest 10 liked songs');
+        foreach ($tracks->items as $track) {
+            $embed->addField($track->track->name, $track->track->artists[0]->name, true);
         }
-        return $embed;
-    }
 
+        $interaction->respondWithMessage(
+            MessageBuilder::new()->addEmbed($embed->build())
+        );
+    }
 }

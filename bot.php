@@ -3,12 +3,16 @@
 include __DIR__.'/vendor/autoload.php';
 include __DIR__ . '/Includes.php';
 
+
+use Bot\Helpers\RemoveAllCommands;
 use Discord\Discord;
+use Discord\Parts\Interactions\Interaction;
 use Discord\Parts\Channel\Message;
 use Discord\WebSockets\Intents;
 use Discord\WebSockets\Event;
 use Bot\Events\MessageListener;
 use Bot\Helpers\CommandRegistrar;
+use Discord\Builders\MessageBuilder;
 
 use Dotenv\Dotenv;
 
@@ -37,11 +41,14 @@ $discord->on('ready', function (Discord $discord) {
         $listener->handle($message, $discord);
     });
 
-    $discord->on(Event::INTERACTION_CREATE, function ($interaction, Discord $discord) {
-        $listener = new \Bot\Events\CommandListener();
-        $listener->handle($interaction, $discord);
+    //when a slash command is used, go to the command's handle function
+    $discord->on(Event::INTERACTION_CREATE, function (Interaction $interaction, Discord $discord) {
+        $command = CommandRegistrar::getCommandByName($interaction->data->name);
+        if ($command) {
+            //call the handle function and send the arguments and discord instance
+            $command->handle($interaction, $discord);
+        }
     });
-
 });
 
 $discord->run();

@@ -2,25 +2,29 @@
 
 namespace Bot\Helpers;
 
+use Discord\Discord;
+use Discord\Parts\Channel\Message;
+use Discord\Builders\MessageBuilder;
+use Bot\Builders\EmbedBuilder;
+use Discord\Parts\Embed\Embed;
+
 class ErrorHandler
 {
-    public static function handle($message): array
+    public static function handle(string $message): Embed
     {
-        return [
-            'title' => 'Error',
-            'content' => $message,
-            'flags' => 64,
-            'color' => hexdec('eb3434')
-        ];
+        return EmbedBuilder::create(new Discord())
+            ->setTitle('Error')
+            ->setDescription($message)
+            ->setFailed()
+            ->build();
     }
 
-    public static function handleException($e): array
+    public static function handleException($e): Embed
     {
-        return [
-            'title' => 'Error',
-            'content' => $e->getMessage(),
-            'flags' => 64,
-            'color' => hexdec('eb3434')
-        ];
+        return EmbedBuilder::create(new Discord())
+            ->setTitle('Error')
+            ->setDescription($e->getMessage())
+            ->setFailed()
+            ->build();
     }
 }
