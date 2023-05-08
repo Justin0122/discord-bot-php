@@ -3,9 +3,6 @@
 include __DIR__.'/vendor/autoload.php';
 include __DIR__ . '/Includes.php';
 
-use Bot\Helpers\CommandHandler;
-use Bot\Helpers\ImageHelper;
-use Bot\Helpers\RemoveAllCommands;
 use Discord\Discord;
 use Discord\Parts\Channel\Message;
 use Discord\WebSockets\Intents;
