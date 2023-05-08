@@ -14,6 +14,12 @@ class SetAdmin
     {
         return 'Add an admin';
     }
+
+    public function getGuildId(): ?string
+    {
+        return null;
+    }
+
     public function getOptions(): array
     {
         return [

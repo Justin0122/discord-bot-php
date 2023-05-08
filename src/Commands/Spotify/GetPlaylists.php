@@ -22,6 +22,11 @@ class GetPlaylists
         return 'Get a list of your playlists.';
     }
 
+    public function getGuildId(): ?string
+    {
+        return null;
+    }
+
     public function getOptions(): array
     {
         return [];

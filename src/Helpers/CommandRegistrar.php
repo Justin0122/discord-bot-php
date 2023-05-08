@@ -25,12 +25,22 @@ class CommandRegistrar
 
             if (class_exists($className)) {
                 $command = new $className();
-                $client->createGlobalCommand(
-                    $command->getName(),
-                    $command->getDescription(),
-                    $command->getOptions()
-                );
-                echo "Registered command: {$command->getName()}", PHP_EOL;
+                if ($command->getGuildId()) {
+                    $client->createGuildSpecificCommand(
+                        $command->getGuildId(),
+                        $command->getName(),
+                        $command->getDescription(),
+                        $command->getOptions()
+                    );
+                    echo "Registered guild command: {$command->getName()} in guild: {$command->getGuildId()}" . " ({$command->getGuildName()})", PHP_EOL;
+                } else {
+                    $client->createGlobalCommand(
+                        $command->getName(),
+                        $command->getDescription(),
+                        $command->getOptions()
+                    );
+                    echo "Registered command: {$command->getName()}", PHP_EOL;
+                }
             }
         }
     }

@@ -14,6 +14,12 @@ class DelAdmin
     {
         return 'Delete an admin';
     }
+
+    public function getGuildId(): ?string
+    {
+        return null;
+    }
+
     public function getOptions(): array
     {
         return [

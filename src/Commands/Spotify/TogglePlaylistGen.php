@@ -14,6 +14,12 @@ class TogglePlaylistGen
     {
         return 'Toggle the playlist generator';
     }
+
+    public function getGuildId(): ?string
+    {
+        return null;
+    }
+
     public function getOptions(): array
     {
         return [];

@@ -16,6 +16,12 @@ class Spotify
     {
         return 'Allow the bot to access your spotify account';
     }
+
+    public function getGuildId(): ?string
+    {
+        return null;
+    }
+
     public function getOptions(): array
     {
         return [];

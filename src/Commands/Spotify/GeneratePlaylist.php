@@ -22,6 +22,11 @@ class GeneratePlaylist
         return 'Generate a playlist based on your liked songs. Max 250 songs.';
     }
 
+    public function getGuildId(): ?string
+    {
+        return null;
+    }
+
     public function getOptions(): array
     {
         //add optional argument for public or private playlist

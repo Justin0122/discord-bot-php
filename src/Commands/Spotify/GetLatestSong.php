@@ -18,6 +18,11 @@ class GetLatestSong
         return 'Get the latest song from your liked songs';
     }
 
+    public function getGuildId(): ?string
+    {
+        return null;
+    }
+
     public function getOptions(): array
     {
         return [];
