@@ -19,7 +19,7 @@ class GeneratePlaylist
 
     public function getDescription(): string
     {
-        return 'Generate a playlist based on your liked songs';
+        return 'Generate a playlist based on your liked songs. Max 250 songs.';
     }
 
     public function getOptions(): array
@@ -30,6 +30,18 @@ class GeneratePlaylist
                 'name' => 'public',
                 'description' => 'Make the playlist public',
                 'type' => 5,
+                'required' => false
+            ],
+            [
+                'name' => 'start_date',
+                'description' => 'Start date for the playlist (default: 1 month ago)',
+                'type' => 3,
+                'required' => false
+            ],
+            [
+                'name' => 'end_date',
+                'description' => 'End date for the playlist (default: today)',
+                'type' => 3,
                 'required' => false
             ]
         ];
@@ -59,9 +71,25 @@ class GeneratePlaylist
         } elseif ($pid > 0) {
             // Parent process
             // Return an embed indicating that the playlist is being generated
-            $endDate = new \DateTime();
-            $startDate = (clone $endDate)->modify('-1 month');
-            $playlistTitle = $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d') . ' - Generated for ' . $me->display_name;
+            $startDate = $args['start_date'] ? new \DateTime($args['start_date']) : (new \DateTime())->modify('-1 month');
+            $endDate = $args['end_date'] ? new \DateTime($args['end_date']) : ($args['start_date'] ? (new \DateTime($args['start_date']))->modify('+1 month') : new \DateTime());
+            $playlistTitle = 'Liked Songs from ' . $startDate->format('M Y') .'.';
+
+            $playlists = $api->getUserPlaylists($me->id);
+            foreach ($playlists->items as $playlist) {
+                if ($playlist->name == $playlistTitle) {
+                    return ErrorHandler::handle("A playlist with the name `$playlistTitle` already exists. Please delete it and try again.");
+                }
+            }
+
+            if ($startDate > $endDate) {
+                return ErrorHandler::handle("Start date cannot be after end date.");
+            }
+
+            if ($endDate > new \DateTime()) {
+                return ErrorHandler::handle("End date cannot be in the future.");
+            }
+
 
             return [
                 'title' => 'Playlist Generation',
@@ -71,6 +99,12 @@ class GeneratePlaylist
                     [
                         'name' => 'Playlist Name',
                         'value' => $playlistTitle,
+                        'inline' => false
+                    ],
+                    [
+                        'name' => 'Playlist Description',
+                        'value' => 'This playlist was generated with your liked songs from ' .
+                            $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d') . '.',
                         'inline' => false
                     ],
                     [
@@ -104,8 +138,11 @@ class GeneratePlaylist
                     }
 
                     // Filter tracks added within the last month
-                    $endDate = new \DateTime();
-                    $startDate = (clone $endDate)->modify('-1 month');
+                    $startDate = $args['start_date'] ? new \DateTime($args['start_date']) : (new \DateTime())->modify('-1 month');
+                    $endDate = isset($args['end_date'])
+                        ? new \DateTime($args['end_date'])
+                        : ($args['start_date'] ? (new \DateTime($args['start_date']))->modify('+1 month') : new \DateTime());
+                    $startYear = $startDate->format('Y');
 
                     $filteredTracks = array_filter($tracks->items, function ($item) use ($startDate, $endDate) {
                         $addedAt = new \DateTime($item->added_at);
@@ -126,10 +163,13 @@ class GeneratePlaylist
                 }
 
 
-                $playlistTitle = $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d') . ' - Generated for ' . $me->display_name;
+                $playlistTitle = 'Liked Songs from ' . $startDate->format('M Y') .'.';
                 $playlist = $api->createPlaylist([
                     'name' => $playlistTitle,
-                    'public' => $args['public'] ?? false
+                    'public' => $args['public'] ?? false,
+                    'description' =>
+                        'This playlist was generated with your liked songs from ' .
+                        $startDate->format('Y-m-d') . ' to ' . $endDate->format('Y-m-d') . '.'
                 ]);
 
                 // Add tracks to the playlist in batches of 100
