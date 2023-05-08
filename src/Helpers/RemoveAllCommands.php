@@ -13,6 +13,7 @@ class RemoveAllCommands
         $commands = $client->getCommands();
         foreach ($commands as $command) {
             $client->deleteCommand($command);
+            echo "Deleted command: {$command->name}", PHP_EOL;
         }
     }
 

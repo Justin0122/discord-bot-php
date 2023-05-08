@@ -17,6 +17,11 @@ class Ping
         return [];
     }
 
+    public function getGuildId(): ?string
+    {
+        return null;
+    }
+
     public function handle(){
 
         return [
