@@ -25,11 +25,6 @@ class GeneratePlaylist
         return 'Generate a playlist based on your liked songs. Max 250 songs.';
     }
 
-    public function getEphemeral(): bool
-    {
-        return true;
-    }
-
     public function getGuildId(): ?string
     {
         return null;
@@ -79,53 +74,31 @@ class GeneratePlaylist
 
         $me = $api->me();
 
-        // Create a new child process to handle the playlist generation
         $pid = pcntl_fork();
 
-        if ($pid == -1) {
-            // Fork failed, handle the error
-            $interaction->respondWithMessage(
-                MessageBuilder::new()->addEmbed(ErrorHandler::handle("Failed to generate playlist."))
-            );
-        } elseif ($pid > 0) {
+        if ($pid > 0) {
             // Parent process
-            //get startdate from interaction if set, else default to 1 month ago
+            // ...
+
             $optionRepository = $interaction->data->options;
             $startDate = $optionRepository['start_date'] ? new \DateTime($optionRepository['start_date']->value) : new \DateTime('-1 month');
-            $endDate = $optionRepository['end_date'] ? new \DateTime($optionRepository['end_date']->value) : (clone $startDate)->modify('+1 month');
-            //make the PlaylistTitle like: "Liked Songs from Mar 2021."
-            $playlistTitle = 'Liked Songs from ' . $startDate->format('M Y') . '.';
+            $playlistTitle = 'Liked Songs from ' . $startDate->format('M Y') .'.';
 
-            $playlists = $api->getUserPlaylists($me->id);
-            foreach ($playlists->items as $playlist) {
-                if ($playlist->name == $playlistTitle) {
-                    $interaction->respondWithMessage(
-                        MessageBuilder::new()->addEmbed(ErrorHandler::handle("Playlist already exists."))
-                    );
-                }
-            }
-
-            if ($startDate > $endDate) {
-                $interaction->respondWithMessage(
-                    MessageBuilder::new()->addEmbed(ErrorHandler::handle("Start date cannot be after end date."))
+            // Create a MessageBuilder and set the initial embed content
+            $messageBuilder = MessageBuilder::new()
+                ->addEmbed(
+                    EmbedBuilder::create($discord)
+                        ->setTitle('Generating playlist...')
+                        ->setDescription('This may take a while.')
+                        ->addField('User', $me->display_name)
+                        ->addField('Playlist title', $playlistTitle)
+                        ->setInfo()
+                        ->build()
                 );
-            }
 
-            if ($endDate > new \DateTime()) {
-                $interaction->respondWithMessage(
-                    MessageBuilder::new()->addEmbed(ErrorHandler::handle("End date cannot be in the future."))
-                );
-            }
-            $embed = EmbedBuilder::create($discord)
-                ->setTitle('Generating playlist...')
-                ->setDescription('This may take a while.')
-                ->setInfo()
-                ->addField('Title', $playlistTitle)
-                ->build();
+            // Send the initial message with the embed
+            $interaction->respondWithMessage($messageBuilder, true, true);
 
-            $interaction->respondWithMessage(
-                MessageBuilder::new()->addEmbed($embed), true, true
-            );
         } else {
             // Child process
             try {
@@ -185,18 +158,49 @@ class GeneratePlaylist
 
                 // Add tracks to the playlist in batches of 100
                 $trackUris = array_chunk($trackUris, 100);
-
                 foreach ($trackUris as $trackUri) {
                     $api->addPlaylistTracks($playlist->id, $trackUri);
                 }
 
                 // Terminate the child process
-                exit();
+                echo 'Playlist generated: ' . $playlist->external_urls->spotify . "\n Title: " . $playlistTitle . PHP_EOL;
+                exit(0);
             } catch (SpotifyWebAPIException $e) {
                 // Terminate the child process
                 echo $e->getMessage() . PHP_EOL;
                 exit();
             }
         }
+
+        pcntl_signal(SIGCHLD, function () use ($interaction, $discord) {
+            $this->updateEmbed($interaction, $discord);
+        });
+    }
+    public function updateEmbed(Interaction $interaction, $discord): void
+    {
+
+        $user_id = $interaction->member->user->id;
+        $api = (new SessionHandler())->setSession($user_id);
+
+        $me = $api->me();
+
+        $playlist = $api->getUserPlaylists($me->id, [
+            'limit' => 1
+        ])->items[0];
+
+        $playlistUrl = 'https://open.spotify.com/playlist/' . $playlist->id;
+
+        $responseBuilder = $interaction->updateOriginalResponse(MessageBuilder::new()
+            ->addEmbed(
+                EmbedBuilder::create($discord)
+                    ->setTitle('Playlist generated!')
+                    ->setDescription('Your playlist ' . $playlist->name . ' has been generated.')
+                    ->addField('Title', $playlist->name)
+                    ->addField('User', $me->display_name)
+                    ->addField('Playlist', $playlistUrl)
+                    ->setSuccess()
+                    ->build()
+            )
+        );
     }
 }
