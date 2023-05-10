@@ -3,6 +3,8 @@
 namespace Bot\Commands\Spotify;
 
 use Bot\Builders\EmbedBuilder;
+use Bot\Classes\SpotifyC;
+use Bot\Classes\UserC;
 use Bot\Helpers\ErrorHandler;
 use Bot\Helpers\SessionHandler;
 use Bot\Helpers\TokenHandler;
@@ -102,6 +104,22 @@ class GeneratePlaylist
         } else {
             // Child process
             try {
+                $optionRepository = $interaction->data->options;
+                $startDate = $optionRepository['start_date'] ? new \DateTime($optionRepository['start_date']->value) : new \DateTime('-1 month');
+                $endDate = $optionRepository['end_date'] ? new \DateTime($optionRepository['end_date']->value) : (clone $startDate)->modify('+1 month');
+
+                $playlistTitle = 'Liked Songs from ' . $startDate->format('M Y') .'.';
+                //check if playlist already exists
+                $playlists = $api->getUserPlaylists($me->id);
+                $playlistExists = false;
+                foreach ($playlists->items as $playlist) {
+                    if ($playlist->name == $playlistTitle) {
+                        $playlistExists = true;
+                        $playlistId = $playlist->id;
+                        break;
+                    }
+                }
+
                 $totalTracks = 250; // Total number of tracks to fetch
                 $limit = 50; // Number of tracks per request
                 $offset = 0; // Initial offset
@@ -122,11 +140,6 @@ class GeneratePlaylist
                         break;
                     }
 
-                    $optionRepository = $interaction->data->options;
-                    $startDate = $optionRepository['start_date'] ? new \DateTime($optionRepository['start_date']->value) : new \DateTime('-1 month');
-                    $endDate = $optionRepository['end_date'] ? new \DateTime($optionRepository['end_date']->value) : (clone $startDate)->modify('+1 month');
-
-
                     $filteredTracks = array_filter($tracks->items, function ($item) use ($startDate, $endDate) {
                         $addedAt = new \DateTime($item->added_at);
                         return $addedAt >= $startDate && $addedAt <= $endDate;
@@ -142,7 +155,8 @@ class GeneratePlaylist
 
                 if (empty($trackUris)) {
                     echo 'No tracks found.' . PHP_EOL;
-                    exit(); // Terminate the child process
+
+                    exit(1); // Terminate the child process
                 }
 
                 $public = $optionRepository['public'] ? $optionRepository['public']->value : false;
@@ -168,25 +182,41 @@ class GeneratePlaylist
             } catch (SpotifyWebAPIException $e) {
                 // Terminate the child process
                 echo $e->getMessage() . PHP_EOL;
-                exit();
+                exit(1);
             }
         }
 
         pcntl_signal(SIGCHLD, function () use ($interaction, $discord) {
-            $this->updateEmbed($interaction, $discord);
+            // Wait for any child process to exit
+            $pid = pcntl_waitpid(-1, $status, WNOHANG);
+
+            // Check if the child process exited successfully (exit code 0)
+            if ($pid > 0 && pcntl_wifexited($status) && pcntl_wexitstatus($status) === 0) {
+                $this->updateEmbed($interaction, $discord);
+            }
+            else{
+                $interaction->updateOriginalResponse(MessageBuilder::new()
+                    ->addEmbed(
+                        EmbedBuilder::create($discord)
+                            ->setTitle('Error')
+                            ->setDescription('An error occurred while generating the playlist.')
+                            ->AddField('Error', 'Error code: ' . pcntl_wexitstatus($status))
+                            ->setFailed()
+                            ->build()
+                    )
+                );
+            }
         });
+
     }
     public function updateEmbed(Interaction $interaction, $discord): void
     {
-
-        $user_id = $interaction->member->user->id;
+        $user_id = UserC::getInteractionUserID($interaction);
         $api = (new SessionHandler())->setSession($user_id);
 
-        $me = $api->me();
+        $me = SpotifyC::getMe($api);
 
-        $playlist = $api->getUserPlaylists($me->id, [
-            'limit' => 1
-        ])->items[0];
+        $playlist = SpotifyC::getFirstPlaylist($api, $me->id);
 
         $playlistUrl = 'https://open.spotify.com/playlist/' . $playlist->id;
 
@@ -203,4 +233,5 @@ class GeneratePlaylist
             )
         );
     }
+
 }

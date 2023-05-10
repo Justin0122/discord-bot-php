@@ -6,8 +6,13 @@ use Bot\Builders\EmbedBuilder;
 use Bot\Helpers\ErrorHandler;
 use Bot\Helpers\SessionHandler;
 use Bot\Helpers\TokenHandler;
+use Discord\Builders\Components\ActionRow;
+use Discord\Builders\Components\Button;
+use Discord\Builders\Components\SelectMenu;
 use Discord\Builders\MessageBuilder;
+use Discord\Parts\Interactions\Command\Option;
 use Discord\Parts\Interactions\Interaction;
+use Discord\Parts\Embed\Embed;
 
 class GetPlaylists
 {
@@ -79,8 +84,13 @@ class GetPlaylists
             $embed->addField('Playlists', $playlist->name, true);
         }
 
+
         $interaction->respondWithMessage(
-            MessageBuilder::new()->addEmbed($embed->build())
+            MessageBuilder::new()->addEmbed($embed->build()), true
         );
+
     }
 }
+
+
+
