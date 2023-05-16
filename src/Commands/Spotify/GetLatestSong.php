@@ -3,7 +3,6 @@
 namespace Bot\Commands\Spotify;
 
 use Bot\Builders\EmbedBuilder;
-use Bot\Helpers\ErrorHandler;
 use Bot\Helpers\SessionHandler;
 use Bot\Helpers\TokenHandler;
 use Discord\Builders\MessageBuilder;
@@ -39,8 +38,11 @@ class GetLatestSong
         $tokens = $tokenHandler->getTokens($user_id);
 
         if (!$tokens) {
+            $embed = EmbedBuilder::create($discord)
+                ->setFailed()
+                ->setDescription('You need to authorize first. Use /authorize');
             $interaction->respondWithMessage(
-                MessageBuilder::new()->addEmbed(ErrorHandler::handle("You need to authorize the bot first by using the '/spotify' command."))
+                MessageBuilder::new()->addEmbed($embed->build()), true
             );
         }
 

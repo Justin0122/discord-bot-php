@@ -5,7 +5,6 @@ namespace Bot\Commands\Spotify;
 use Bot\Builders\EmbedBuilder;
 use Bot\Classes\SpotifyC;
 use Bot\Classes\UserC;
-use Bot\Helpers\ErrorHandler;
 use Bot\Helpers\SessionHandler;
 use Bot\Helpers\TokenHandler;
 use Discord\Builders\MessageBuilder;
@@ -66,27 +65,33 @@ class GeneratePlaylist
         $tokens = $tokenHandler->getTokens($user_id);
 
         if (!$tokens) {
+            $embed = EmbedBuilder::create($discord)
+                ->setFailed()
+                ->setDescription('You need to authorize the bot first by using the `/spotify` command.');
             $interaction->respondWithMessage(
-                MessageBuilder::new()->addEmbed(ErrorHandler::handle("You need to authorize the bot first by using the '/spotify' command."))
+                MessageBuilder::new()->addEmbed($embed->build()), true
             );
         }
-
-        // Set the API using SessionHandler
         $api = (new SessionHandler())->setSession($user_id);
-
         $me = $api->me();
-
         $pid = pcntl_fork();
 
         if ($pid > 0) {
-            // Parent process
-            // ...
 
             $optionRepository = $interaction->data->options;
             $startDate = $optionRepository['start_date'] ? new \DateTime($optionRepository['start_date']->value) : new \DateTime('-1 month');
             $playlistTitle = 'Liked Songs from ' . $startDate->format('M Y') .'.';
 
-            // Create a MessageBuilder and set the initial embed content
+            if ($startDate > new \DateTime()) {
+                $embed = EmbedBuilder::create($discord)
+                    ->setFailed()
+                    ->setDescription('Start date cannot be in the future.');
+                $interaction->respondWithMessage(
+                    MessageBuilder::new()->addEmbed($embed->build()), true
+                );
+                return;
+            }
+
             $messageBuilder = MessageBuilder::new()
                 ->addEmbed(
                     EmbedBuilder::create($discord)
@@ -97,21 +102,16 @@ class GeneratePlaylist
                         ->setInfo()
                         ->build()
                 );
-
-            // Send the initial message with the embed
             $interaction->respondWithMessage($messageBuilder, true, true);
 
         } else {
-            // Child process
             try {
                 $optionRepository = $interaction->data->options;
                 $startDate = $optionRepository['start_date'] ? new \DateTime($optionRepository['start_date']->value) : new \DateTime('-1 month');
                 $endDate = $optionRepository['end_date'] ? new \DateTime($optionRepository['end_date']->value) : (clone $startDate)->modify('+1 month');
 
                 $playlistTitle = 'Liked Songs from ' . $startDate->format('M Y') .'.';
-                //check if playlist already exists
                 $playlists = $api->getUserPlaylists($me->id);
-                $playlistExists = false;
                 foreach ($playlists->items as $playlist) {
                     if ($playlist->name == $playlistTitle) {
                         $playlistExists = true;
@@ -119,7 +119,6 @@ class GeneratePlaylist
                         break;
                     }
                 }
-
                 $totalTracks = 250; // Total number of tracks to fetch
                 $limit = 50; // Number of tracks per request
                 $offset = 0; // Initial offset
@@ -134,28 +133,17 @@ class GeneratePlaylist
                         'offset' => $offset,
                         'time_range' => 'short_term'
                     ]);
-
-                    // Check if there are no more tracks available
                     if (empty($tracks->items)) {
                         break;
                     }
-
-                    $filteredTracks = array_filter($tracks->items, function ($item) use ($startDate, $endDate) {
-                        $addedAt = new \DateTime($item->added_at);
-                        return $addedAt >= $startDate && $addedAt <= $endDate;
-                    });
-
-                    // Extract track URIs from the filtered tracks
-                    $trackUris = array_merge($trackUris, array_map(function ($item) {
-                        return $item->track->uri;
-                    }, $filteredTracks));
+                    $filteredTracks = SpotifyC::filterTracksByDate($tracks->items, $startDate, $endDate);
+                    $trackUris = array_merge($trackUris, SpotifyC::extractTrackUris($filteredTracks));
 
                     $offset += $limit; // Increment the offset for the next request
                 }
 
                 if (empty($trackUris)) {
                     echo 'No tracks found.' . PHP_EOL;
-
                     exit(1); // Terminate the child process
                 }
 
@@ -176,7 +164,6 @@ class GeneratePlaylist
                     $api->addPlaylistTracks($playlist->id, $trackUri);
                 }
 
-                // Terminate the child process
                 echo 'Playlist generated: ' . $playlist->external_urls->spotify . "\n Title: " . $playlistTitle . PHP_EOL;
                 exit(0);
             } catch (SpotifyWebAPIException $e) {
@@ -195,20 +182,29 @@ class GeneratePlaylist
                 $this->updateEmbed($interaction, $discord);
             }
             else{
+
+                if(pcntl_wexitstatus($status) === 1){
+                    $errorStatus = 'No tracks found.';
+                }
+                else{
+                    $errorStatus = 'Unexpected error. Please try again later.';
+                }
+
                 $interaction->updateOriginalResponse(MessageBuilder::new()
                     ->addEmbed(
                         EmbedBuilder::create($discord)
                             ->setTitle('Error')
                             ->setDescription('An error occurred while generating the playlist.')
-                            ->AddField('Error', 'Error code: ' . pcntl_wexitstatus($status))
+                            ->AddField('Error', 'code: ' . pcntl_wexitstatus($status) . PHP_EOL . $errorStatus)
                             ->setFailed()
                             ->build()
                     )
                 );
             }
         });
-
     }
+
+
     public function updateEmbed(Interaction $interaction, $discord): void
     {
         $user_id = UserC::getInteractionUserID($interaction);
@@ -220,8 +216,7 @@ class GeneratePlaylist
 
         $playlistUrl = 'https://open.spotify.com/playlist/' . $playlist->id;
 
-        $responseBuilder = $interaction->updateOriginalResponse(MessageBuilder::new()
-            ->addEmbed(
+        $responseBuilder = $interaction->updateOriginalResponse(MessageBuilder::new()->addEmbed(
                 EmbedBuilder::create($discord)
                     ->setTitle('Playlist generated!')
                     ->setDescription('Your playlist ' . $playlist->name . ' has been generated.')

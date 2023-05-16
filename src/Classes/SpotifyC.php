@@ -73,6 +73,21 @@ class SpotifyC
         return $track->uri;
     }
 
+    public static function filterTracksByDate($tracks, $startDate, $endDate): array
+    {
+        return array_filter($tracks, function ($item) use ($startDate, $endDate) {
+            $addedAt = new \DateTime($item->added_at);
+            return $addedAt >= $startDate && $addedAt <= $endDate;
+        });
+    }
+
+    public static function extractTrackURIs($tracks): array
+    {
+        return array_map(function ($item) {
+            return $item->track->uri;
+        }, $tracks);
+    }
+
     public static function getMe($api)
     {
         return $api->me();

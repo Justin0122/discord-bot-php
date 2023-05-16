@@ -1,12 +1,18 @@
 <?php
 
 namespace Bot\Builders;
+use Discord\Builders\Components\ActionRow;
+use Discord\Builders\Components\Button;
 use Discord\Discord;
 use Discord\Parts\Embed\Embed;
+use Discord\Parts\Embed\Field;
+
 class EmbedBuilder
 {
 
     private Embed $embed;
+    private array $fields = [];
+    private int $maxFieldsPerPage = 10;
 
     public static function create(Discord $discord, string $title = '', string $footer = '', string $description = ''): EmbedBuilder
     {
@@ -25,6 +31,7 @@ class EmbedBuilder
 
     public function setFailed(): self
     {
+        $this->embed->setTitle('Failed');
         $this->embed->setColor(15548997);
         return $this;
     }
@@ -97,9 +104,36 @@ class EmbedBuilder
         return $this;
     }
 
-
     public function build(): Embed
     {
+        if (count($this->fields) <= $this->maxFieldsPerPage) {
+            return $this->embed;
+        }
+
+        $pages = array_chunk($this->fields, $this->maxFieldsPerPage);
+        $page = 1;
+        $totalPages = count($pages);
+
+        $this->embed->setDescription("Showing page $page of $totalPages");
+
+        foreach ($pages[$page - 1] as $field) {
+            $this->embed->addFieldValues($field['name'], $field['value'], $field['inline'] ?? false);
+        }
+
+        $row = ActionRow::new();
+
+        if ($page > 1) {
+            $row->addComponent(Button::new(Button::STYLE_SUCCESS)->setLabel('Previous')->setCustomId('previous'));
+
+        }
+
+        if ($page < $totalPages) {
+            $row->addComponent(Button::new(Button::STYLE_SUCCESS)->setLabel('Next')->setCustomId('next'));
+        }
+
+        // Add the action row to the embed
+        $this->embed->addComponent($row);
+
         return $this->embed;
     }
 }
